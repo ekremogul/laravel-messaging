@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Ekremogul\LaravelMessaging\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelMessagingCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-messaging';
 
     public $description = 'My command';
 
