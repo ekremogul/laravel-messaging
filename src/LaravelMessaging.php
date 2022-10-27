@@ -9,7 +9,40 @@ use Illuminate\Http\Response;
 class LaravelMessaging
 {
     protected int $authUser;
-
+    protected bool $filteredMessage;
+    protected $filterChecks = [];
+    protected $multiCharReplace = false;
+    protected $replaceWithLength;
+    protected $replaceWithText;
+    protected $replaceFullWords = true;
+    protected $strReplace = [
+        'a' => '(a|a\.|a\-|4|@|Á|á|À|Â|à|Â|â|Ä|ä|Ã|ã|Å|å|α|Δ|Λ|λ)',
+        'b' => '(b|b\.|b\-|8|\|3|ß|Β|β)',
+        'c' => '(c|c\.|c\-|Ç|ç|¢|€|<|\(|{|©)',
+        'd' => '(d|d\.|d\-|&part;|\|\)|Þ|þ|Ð|ð)',
+        'e' => '(e|e\.|e\-|3|€|È|è|É|é|Ê|ê|∑)',
+        'f' => '(f|f\.|f\-|ƒ)',
+        'g' => '(g|g\.|g\-|6|9)',
+        'h' => '(h|h\.|h\-|Η)',
+        'i' => '(i|i\.|i\-|!|\||\]\[|]|1|∫|Ì|Í|Î|Ï|ì|í|î|ï)',
+        'j' => '(j|j\.|j\-)',
+        'k' => '(k|k\.|k\-|Κ|κ)',
+        'l' => '(l|1\.|l\-|!|\||\]\[|]|£|∫|Ì|Í|Î|Ï)',
+        'm' => '(m|m\.|m\-)',
+        'n' => '(n|n\.|n\-|η|Ν|Π)',
+        'o' => '(o|o\.|o\-|0|Ο|ο|Φ|¤|°|ø)',
+        'p' => '(p|p\.|p\-|ρ|Ρ|¶|þ)',
+        'q' => '(q|q\.|q\-)',
+        'r' => '(r|r\.|r\-|®)',
+        's' => '(s|s\.|s\-|5|\$|§)',
+        't' => '(t|t\.|t\-|Τ|τ)',
+        'u' => '(u|u\.|u\-|υ|µ)',
+        'v' => '(v|v\.|v\-|υ|ν)',
+        'w' => '(w|w\.|w\-|ω|ψ|Ψ)',
+        'x' => '(x|x\.|x\-|Χ|χ)',
+        'y' => '(y|y\.|y\-|¥|γ|ÿ|ý|Ÿ|Ý)',
+        'z' => '(z|z\.|z\-|Ζ)',
+    ];
     public static function create(): static
     {
         return new static();
@@ -17,7 +50,10 @@ class LaravelMessaging
 
     public function __construct()
     {
+        $this->filteredMessage = config("messaging.filter.enable", true);
         $this->authUser = auth()->id();
+        $this->replaceWithText = config("messaging.filter.bad_word.replace_with");
+        $this->generateFilterChecks();;
     }
 
     public function checkUsersExists($user1, $user2): int|bool
@@ -76,7 +112,12 @@ class LaravelMessaging
             $unreded_message = $item->messages()->where("user_id", "!=", $this->authUser)->where('is_seen',0)->count();
             $newItem->unreaded_message = $unreded_message ? 1 : 0;
             $newItem->total_unread = $unreded_message;
-            $newItem->message = $item->messages->first();
+            $firstMessage = $item->messages->first();
+            if($this->filteredMessage){
+                $firstMessage->message = $this->checkBadWords($firstMessage->message);
+            }
+
+            $newItem->message = $firstMessage;
             $newItem->withUser = $conversationWith;
             return $newItem;
         });
@@ -89,7 +130,20 @@ class LaravelMessaging
         $conversation = Conversation::query()
             ->findOrFail($conversation_id);
 
-        return $conversation->messages()->with('sender')->offset($offset)->take($take)->orderByDesc('id')->get()->reverse();
+        $messages = $conversation
+            ->messages()
+            ->with('sender')
+            ->offset($offset)
+            ->take($take)
+            ->orderByDesc('id')
+            ->get()
+            ->reverse()->map(function($item) {
+                if ($this->filteredMessage) {
+                    $item->message = $this->checkBadWords($item->message);
+                }
+                return $item;
+            });
+        return $messages;
     }
 
     public function sendMessage($receiver_id, $message)
@@ -146,5 +200,90 @@ class LaravelMessaging
     public function getUnreadInboxCount()
     {
         return $this->inbox()->sum("unreaded_message");
+    }
+    public function disableFilter()
+    {
+        $this->filteredMessage = false;
+        return $this;
+    }
+    private function checkBadWords($message){
+        if( !is_string($message) || !trim($message))
+            return $message;
+
+        if (config("messaging.filter.enable") && config("messaging.filter.email_filtered.enable")){
+            $matches = [];
+            $pattern = '/[a-z0-9_\-\+\.]+@[a-z0-9\-]+\.([a-z]{2,4})(?:\.[a-z]{2})?/i';
+            preg_match_all($pattern, $message, $matches);
+            if (count($matches[0])) {
+                $message = str($message)->replace($matches[0], config("messaging.filter.email_filtered.replace_with"));
+            }
+        }
+        $message = $this->filterMessage($message);
+        return $message;
+    }
+
+    private function generateFilterChecks()
+    {
+        $this->filterChecks = [];
+        foreach(config("messaging.filter.bad_word.list", []) as $string ) {
+            $this->filterChecks[] = $this->getFilterRegexp($string);
+        }
+    }
+    private function getFilterRegexp($string) {
+        $replaceFilter = $this->replaceFilter($string);
+
+        if ($this->replaceFullWords) {
+            return '/\b'.$replaceFilter.'\b/iu';
+        }
+
+        return '/'.$replaceFilter.'/iu';
+    }
+    private function replaceFilter($string)
+    {
+        $this->replaceWith($this->replaceWithText);
+
+        return str_ireplace(array_keys($this->strReplace), array_values($this->strReplace), $string);
+    }
+    private function filterMessage($message)
+    {
+        return preg_replace_callback($this->filterChecks, function($matches) {
+            return $this->replaceWithFilter($matches[0]);
+        }, $message);
+    }
+    public function replaceWith($string)
+    {
+        $this->replaceWith = $string;
+
+        $this->replaceWithLength = mb_strlen($this->replaceWith);
+
+        $this->multiCharReplace = $this->replaceWithLength === 1;
+
+        return $this;
+    }
+
+    private function replaceWithFilter($message)
+    {
+        $string_length = mb_strlen($message);
+
+        if($this->multiCharReplace) {
+            return str_repeat($this->replaceWithText, $string_length);
+        }
+        return $this->randomFilterChar($string_length);
+    }
+    private function randomFilterChar($len)
+    {
+        $len = $len == 0 ? 1 : $len;
+        $length = 0;
+        try {
+            $length = str_shuffle(
+                str_repeat($this->replaceWithText,
+                    intval($len / $this->replaceWithLength)
+                )
+                .substr($this->replaceWithText, 0, ($len % $this->replaceWithLength))
+            );
+        }catch (\Exception $e){
+            dd($e);
+        }
+        return $length;
     }
 }
