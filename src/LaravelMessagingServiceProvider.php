@@ -19,7 +19,7 @@ class LaravelMessagingServiceProvider extends PackageServiceProvider
             ->name('laravel-messaging')
             ->hasConfigFile()
             ->hasViews()
-            ->hasMigration('create_laravel-messaging_table')
+            ->hasMigrations('create_laravel_messaging_messages_table','create_laravel_messaging_conversations_table')
             ->hasCommand(LaravelMessagingCommand::class);
     }
 }

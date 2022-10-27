@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('laravel_messaging_messages', function (Blueprint $table) {
+            $table->id();
+            $table->text('message');
+            $table->boolean('is_seen')->default(0);
+            $table->boolean('archived_from_sender')->default(0);
+            $table->boolean('archived_from_receiver')->default(0);
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('conversation_id');
+            $table->timestamps();
+        });
+    }
+    public function down()
+    {
+        Schema::dropIfExists('laravel_messaging_messages');
+    }
+};

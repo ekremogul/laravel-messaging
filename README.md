@@ -26,34 +26,80 @@ composer require ekremogul/laravel-messaging
 You can publish and run the migrations with:
 
 ```bash
-php artisan vendor:publish --tag="laravel-messaging-migrations"
+php artisan vendor:publish --tag="messaging-migrations"
 php artisan migrate
 ```
 
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --tag="laravel-messaging-config"
+php artisan vendor:publish --tag="messaging-config"
 ```
 
 This is the contents of the published config file:
 
 ```php
 return [
+    "user_model" => "App\Models\User"
 ];
-```
-
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag="laravel-messaging-views"
 ```
 
 ## Usage
 
+#### Definition
 ```php
-$laravelMessaging = new Ekremogul\LaravelMessaging();
-echo $laravelMessaging->echoPhrase('Hello, Ekremogul!');
+$laravelMessaging = Ekremogul\LaravelMessaging::create();
+```
+
+#### Get Inbox
+```
+$inbox = $laravelMessaging($order = "desc", $offset = 0, $take = 20); // Retrieve the last 20 messages
+
+foreach($inbox as $item) {
+    /*
+    * App\Models\User 
+    * return the messaging user
+    */
+    $item->withUser;
+    
+    /*
+    * Ekremogul\LaravelMessaging\Model\Message
+    * return last message with user
+    */ 
+    $item->message;
+    
+    /*
+    * Return 0 or 1
+    * Returns 1 if there is a message you haven't read
+    */
+    $item->unreaded_message;
+    
+    /*
+    * Return integer
+    * Returns the total number of unread messages
+    */
+    $item->total_unread;
+}
+```
+#### Recieve message with user
+```
+$laravelMessaging->getMessagesWithUser($user_id, $offset = 0, $take = 20);
+```
+#### Send message
+```
+$laravelMessaging->sendMessage($user_id, $message);
+```
+#### Make seen specific message
+```
+$laravelMessaging->makeSeen($message_id);
+```
+#### Make specific message seen
+```
+$laravelMessaging->makeSeen($message_id);
+```
+#### Make all message make with the user seen
+```
+$laravelMessaging->makeSeenAll($user_id);
 ```
 
 ## Testing
