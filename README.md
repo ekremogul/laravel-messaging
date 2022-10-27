@@ -5,7 +5,7 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/ekremogul/laravel-messaging/Fix%20PHP%20code%20style%20issues?label=code%20style)](https://github.com/ekremogul/laravel-messaging/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/ekremogul/laravel-messaging.svg?style=flat-square)](https://packagist.org/packages/ekremogul/laravel-messaging)
 
-[<img src="https://banners.beyondco.de/Laravel%20Messasing.png?theme=light&packageManager=composer+require&packageName=ekremogul+%2F+laravel-messaging&pattern=architect&style=style_1&description=Messaging+package+for+Laravel&md=1&showWatermark=1&fontSize=100px&images=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg"]
+[![Messaging package for Laravel](https://banners.beyondco.de/Laravel%20Messasing.png?theme=light&packageManager=composer+require&packageName=ekremogul+%2F+laravel-messaging&pattern=architect&style=style_1&description=Messaging+package+for+Laravel&md=1&showWatermark=1&fontSize=100px&images=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg)](https://packagist.org/packages/ekremogul/laravel-messaging)
 
 ## Installation
 
