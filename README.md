@@ -40,7 +40,7 @@ return [
 
 #### Definition
 ```php
-$laravelMessaging = Ekremogul\LaravelMessaging::create();
+$laravelMessaging = Ekremogul\LaravelMessaging\LaravelMessaging::create();
 ```
 
 #### Get Inbox
