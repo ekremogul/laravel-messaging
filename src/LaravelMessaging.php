@@ -189,6 +189,7 @@ class LaravelMessaging
             $messages = Message::query()
                 ->where('user_id', '!=', $this->authUser)
                 ->where('is_seen', 0)
+                ->where('conversation_id', $conversation_id)
                 ->update([
                     "is_seen" => 1
                 ]);
